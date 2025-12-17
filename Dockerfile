@@ -1,31 +1,38 @@
-# Multi-stage build for React frontend
-FROM node:18-alpine AS builder
+# =========================
+# Stage 1: Build Frontend
+# =========================
+FROM node:18-bullseye AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy dependency descriptors first (cache friendly)
+COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install ALL dependencies (build requires devDependencies)
+RUN npm ci
 
 # Copy source code
 COPY . .
 
-# Build the application
+# Build Vite app
 RUN npm run build
 
-# Production stage with Nginx
-FROM nginx:alpine
 
-# Copy built files from builder
-COPY --from=builder /app/dist /usr/share/nginx/html
+# =========================
+# Stage 2: Runtime (Nginx)
+# =========================
+FROM nginx:1.25-alpine
 
-# Copy custom nginx configuration
+# Remove default config
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port
+# Copy build result from builder
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Expose container port
 EXPOSE 80
 
 # Health check
