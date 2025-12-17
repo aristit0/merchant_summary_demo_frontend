@@ -29,7 +29,7 @@ export const merchantAPI = {
   // Health check
   healthCheck: async () => {
     try {
-      const response = await fetch('http://localhost:8080/health');
+      const response = await fetch('http://merchant-backend:8080/health');
       const data = await response.json();
       return data;
     } catch (error) {
